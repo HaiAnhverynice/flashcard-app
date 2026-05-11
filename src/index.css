@@ -856,7 +856,7 @@ input[type="text"]:focus {
   background: var(--surface);
   font-family: var(--font-mono);
   font-size: 0.9rem;
-  padding: 11px 40px 11px 38px;
+  padding: 11px 40px 11px 44px;
   border-radius: var(--radius);
   color: var(--fg);
   box-shadow: var(--shadow-sm);
