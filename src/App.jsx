@@ -18,6 +18,7 @@ export default function App() {
   const [activeDeck, setActiveDeck] = useState(null)
   const [activeMode, setActiveMode] = useState('quiz')
   const [quizResults, setQuizResults] = useState(null)
+  const [learnRetryCount, setLearnRetryCount] = useState(0)
 
   const startQuiz = (deck, mode = 'quiz') => {
     const shuffled = {
@@ -43,6 +44,7 @@ export default function App() {
     if (!action) {
       setScreen('menu')
     } else if (action === 'retry') {
+      setLearnRetryCount(c => c + 1)
       startQuiz(activeDeck, activeMode)
     }
   }
@@ -64,6 +66,7 @@ export default function App() {
       )}
       {(screen === 'learn' || screen === 'hardcore') && activeDeck && (
         <LearnQuiz
+          key={`${activeDeck.name}-${screen}-${learnRetryCount}`}
           deck={activeDeck}
           mode={screen}
           onFinish={handleLearnFinish}

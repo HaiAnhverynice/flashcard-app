@@ -48,6 +48,10 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
   const [done, setDone] = useState(false)
   const [roundStats, setRoundStats] = useState({ correct: 0, wrong: 0 })
 
+  // Guard: prevent goNext from firing immediately after submitAnswer
+  // (key-repeat on Enter would otherwise skip over the feedback screen)
+  const lastSubmitTimeRef = useRef(0)
+
   const currentQ = queue[current]
   const isMCQ = currentQ?.type === 'MCQ'
   const total = deck.questions.length
@@ -57,6 +61,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
   const inputRef = useRef()
 
   const submitAnswer = useCallback((userAnswer) => {
+    lastSubmitTimeRef.current = Date.now()
     const correct =
       userAnswer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase()
 
@@ -93,6 +98,9 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
   }, [current, currentQ, isHardcore])
 
   const goNext = useCallback(() => {
+    // Don't advance if we just submitted — guards against Enter key-repeat
+    // skipping past the feedback screen before the user can read it
+    if (Date.now() - lastSubmitTimeRef.current < 400) return
     setQueue(prev => {
       let q = [...prev]
       const entry = q[current]
@@ -127,11 +135,14 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
       return q
     })
 
-    setPhase('answering')
-    setSelectedOption(null)
-    setWrittenInput('')
-    setIsCorrect(null)
-    setAnsweredQ(null)
+    // Small delay to ensure feedback is visible on written answers
+    setTimeout(() => {
+      setPhase('answering')
+      setSelectedOption(null)
+      setWrittenInput('')
+      setIsCorrect(null)
+      setAnsweredQ(null)
+    }, 100)
   }, [current])
 
   // Keyboard handler
@@ -296,15 +307,26 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
       {/* Feedback */}
       {phase === 'feedback' && answeredQ && (
         <div className={`feedback-banner ${isCorrect ? 'correct' : 'wrong'}`}>
-          <span className="feedback-icon">{isCorrect ? '✓' : '✗'}</span>
-          <span>
-            {isCorrect
-              ? isHardcore && answeredQ.correctStreak < answeredQ.requiredCorrect
-                ? `Correct! ${answeredQ.requiredCorrect - answeredQ.correctStreak} more needed.`
-                : 'Correct! Mastered ✦'
-              : <span>Wrong — correct: <MathText text={answeredQ.answer} /></span>
-            }
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+            <span className="feedback-icon">{isCorrect ? '✓' : '✗'}</span>
+            <span>
+              {isCorrect
+                ? isHardcore && answeredQ.correctStreak < answeredQ.requiredCorrect
+                  ? `Correct! ${answeredQ.requiredCorrect - answeredQ.correctStreak} more needed.`
+                  : 'Correct! Mastered ✦'
+                : !isMCQ
+                  ? <span><strong>Wrong.</strong> Correct answer: <MathText text={answeredQ.answer} /></span>
+                  : <span>Wrong — correct: <MathText text={answeredQ.answer} /></span>
+              }
+            </span>
+          </div>
+          <button
+            className="btn-ghost"
+            style={{ padding: '6px 16px', fontSize: '0.82rem', flexShrink: 0, marginLeft: 8 }}
+            onClick={goNext}
+          >
+            Continue →
+          </button>
         </div>
       )}
 

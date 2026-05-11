@@ -97,6 +97,7 @@ export default function MathInput({
   const handleKey = (e) => {
     if (e.key === 'Enter' && !disabled && value.trim()) {
       e.preventDefault()
+      e.stopPropagation() // prevent the window keydown handler from also firing
       onSubmit?.(value.trim())
     }
   }
