@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import MathText from '../utils/MathText.jsx'
+import MathInput from '../utils/MathInput.jsx'
 
 /*
   Quiz states per question:
@@ -15,17 +16,11 @@ export default function Quiz({ deck, onFinish }) {
   const [writtenInput, setWrittenInput] = useState('')
   const [isCorrect, setIsCorrect] = useState(null)
   const [results, setResults] = useState([]) // { question, type, answer, userAnswer, correct }
-  const inputRef = useRef()
 
   const currentQ = questions[index]
   const isMCQ = currentQ.type === 'MCQ'
 
-  // Focus written input on each question
-  useEffect(() => {
-    if (!isMCQ && phase === 'answering') {
-      setTimeout(() => inputRef.current?.focus(), 50)
-    }
-  }, [index, isMCQ, phase])
+  // Focus is now handled by MathInput itself
 
   const submitAnswer = useCallback((userAnswer) => {
     const correct =
@@ -169,18 +164,14 @@ export default function Quiz({ deck, onFinish }) {
           </div>
         ) : (
           <div className="written-area">
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Type your answer…"
+            <MathInput
               value={writtenInput}
-              onChange={(e) => setWrittenInput(e.target.value)}
+              onChange={setWrittenInput}
+              onSubmit={(v) => phase === 'answering' && v && submitAnswer(v)}
               disabled={phase === 'feedback'}
-              style={
-                phase === 'feedback'
-                  ? { background: isCorrect ? '#E8FFE8' : '#FFE8E8' }
-                  : {}
-              }
+              style={phase === 'feedback' ? {
+                '--input-bg': isCorrect ? '#E8FFE8' : '#FFE8E8'
+              } : {}}
             />
             {phase === 'answering' && (
               <button

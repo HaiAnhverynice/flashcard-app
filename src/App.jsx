@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import Menu from './components/Menu.jsx'
 import Quiz from './components/Quiz.jsx'
+import LearnQuiz from './components/LearnQuiz.jsx'
 import ScoreScreen from './components/ScoreScreen.jsx'
 
 /*
   Screens:
-    'menu'   → deck list
-    'quiz'   → active quiz
-    'score'  → results after quiz
+    'menu'     → deck list
+    'quiz'     → classic timed quiz
+    'learn'    → learn mode (cycle until all correct)
+    'hardcore' → hardcore learn mode
+    'score'    → results after classic quiz
 */
 
 export default function App() {
@@ -15,20 +18,18 @@ export default function App() {
   const [activeDeck, setActiveDeck] = useState(null)
   const [quizResults, setQuizResults] = useState(null)
 
-  // Shuffle questions when starting quiz
-  const startQuiz = (deck) => {
+  const startQuiz = (deck, mode = 'quiz') => {
     const shuffled = {
       ...deck,
       questions: shuffle([...deck.questions]),
     }
     setActiveDeck(shuffled)
     setQuizResults(null)
-    setScreen('quiz')
+    setScreen(mode)
   }
 
   const handleQuizFinish = (results) => {
     if (!results) {
-      // User quit early
       setScreen('menu')
       return
     }
@@ -36,9 +37,16 @@ export default function App() {
     setScreen('score')
   }
 
+  const handleLearnFinish = (action) => {
+    if (!action) {
+      setScreen('menu')
+    } else if (action === 'retry') {
+      startQuiz(activeDeck, screen)
+    }
+  }
+
   const handleRetry = () => {
-    // Re-shuffle and restart same deck
-    startQuiz(activeDeck)
+    startQuiz(activeDeck, 'quiz')
   }
 
   return (
@@ -50,6 +58,13 @@ export default function App() {
         <Quiz
           deck={activeDeck}
           onFinish={handleQuizFinish}
+        />
+      )}
+      {(screen === 'learn' || screen === 'hardcore') && activeDeck && (
+        <LearnQuiz
+          deck={activeDeck}
+          mode={screen}
+          onFinish={handleLearnFinish}
         />
       )}
       {screen === 'score' && quizResults && (

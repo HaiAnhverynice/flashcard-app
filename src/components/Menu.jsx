@@ -15,6 +15,7 @@ export default function Menu({ onStartQuiz }) {
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
   const [firebaseError, setFirebaseError] = useState(false)
+  const [selectedDeck, setSelectedDeck] = useState(null) // deck waiting for mode pick
 
   const loadDecks = async () => {
     setLoading(true)
@@ -25,7 +26,6 @@ export default function Menu({ onStartQuiz }) {
     } catch (e) {
       console.error('Firebase error:', e)
       setFirebaseError(true)
-      // Fallback to localStorage
       const local = JSON.parse(localStorage.getItem('flashcard_decks') || '[]')
       setDecks(local)
     } finally {
@@ -118,7 +118,7 @@ export default function Menu({ onStartQuiz }) {
       ) : (
         <div className="deck-grid">
           {decks.map((deck) => (
-            <div key={deck.id} className="deck-card" onClick={() => onStartQuiz(deck)}>
+            <div key={deck.id} className="deck-card" onClick={() => setSelectedDeck(deck)}>
               <button
                 className="deck-card-delete"
                 onClick={(e) => handleDelete(e, deck.id)}
@@ -147,6 +147,49 @@ export default function Menu({ onStartQuiz }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Mode picker modal */}
+      {selectedDeck && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setSelectedDeck(null)}>
+          <div className="modal">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.3rem' }}>
+                {selectedDeck.name}
+              </h2>
+              <button className="btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setSelectedDeck(null)}>✕</button>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--fg-muted)', marginBottom: 28 }}>
+              {selectedDeck.questions?.length} questions · Choose your study mode
+            </p>
+
+            <div className="mode-list">
+              <button className="mode-btn mode-btn-quiz" onClick={() => { onStartQuiz(selectedDeck, 'quiz'); setSelectedDeck(null) }}>
+                <div className="mode-icon">⚡</div>
+                <div>
+                  <div className="mode-name">Quiz</div>
+                  <div className="mode-desc">Answer all questions once. Get a score at the end.</div>
+                </div>
+              </button>
+
+              <button className="mode-btn mode-btn-learn" onClick={() => { onStartQuiz(selectedDeck, 'learn'); setSelectedDeck(null) }}>
+                <div className="mode-icon">📖</div>
+                <div>
+                  <div className="mode-name">Learn</div>
+                  <div className="mode-desc">Cycles wrong answers back in until every question is correct.</div>
+                </div>
+              </button>
+
+              <button className="mode-btn mode-btn-hardcore" onClick={() => { onStartQuiz(selectedDeck, 'hardcore'); setSelectedDeck(null) }}>
+                <div className="mode-icon">💀</div>
+                <div>
+                  <div className="mode-name">Hardcore</div>
+                  <div className="mode-desc">Wrong answers come back n+1 times. Each mistake costs more.</div>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
