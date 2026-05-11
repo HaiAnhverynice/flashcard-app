@@ -66,6 +66,7 @@ function processRows(rows) {
     if (!answer) throw new Error(`Row ${i + startIndex + 1}: Missing answer.`)
 
     let choices = []
+    let resolvedAnswer = answer
     if (type === 'MCQ') {
       choices = row
         .slice(3)
@@ -75,16 +76,21 @@ function processRows(rows) {
       if (choices.length < 2)
         throw new Error(`Row ${i + startIndex + 1}: MCQ questions need at least 2 choices in columns D onwards.`)
 
-      if (!choices.includes(answer))
+      // Support numeric answer (1/2/3/4) as 1-based index into choices
+      const numericIndex = parseInt(answer, 10)
+      if (!isNaN(numericIndex) && numericIndex >= 1 && numericIndex <= choices.length) {
+        resolvedAnswer = choices[numericIndex - 1]
+      } else if (!choices.includes(answer)) {
         throw new Error(
-          `Row ${i + startIndex + 1}: The answer "${answer}" must appear in the choices list.`
+          `Row ${i + startIndex + 1}: The answer "${answer}" must be a valid choice number (1–${choices.length}) or match one of the choices exactly.`
         )
+      }
 
       // Shuffle choices
       choices = shuffle(choices)
     }
 
-    return { question, type, answer, choices }
+    return { question, type, answer: resolvedAnswer, choices }
   })
 }
 
