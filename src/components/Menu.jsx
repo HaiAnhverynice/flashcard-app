@@ -16,6 +16,11 @@ export default function Menu({ onStartQuiz }) {
   const [showUpload, setShowUpload] = useState(false)
   const [firebaseError, setFirebaseError] = useState(false)
   const [selectedDeck, setSelectedDeck] = useState(null) // deck waiting for mode pick
+  const [search, setSearch] = useState('')
+
+  const filteredDecks = decks.filter(d =>
+    d.name.toLowerCase().includes(search.toLowerCase())
+  )
 
   const loadDecks = async () => {
     setLoading(true)
@@ -82,7 +87,7 @@ export default function Menu({ onStartQuiz }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
         <div>
           <h1 className="section-title">Your Decks</h1>
           <p className="section-subtitle">Choose a deck to start studying</p>
@@ -97,27 +102,53 @@ export default function Menu({ onStartQuiz }) {
         </div>
       </div>
 
+      <div className="search-wrap">
+        <span className="search-icon">⌕</span>
+        <input
+          className="search-input"
+          type="text"
+          placeholder="Search decks…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {search && (
+          <button className="search-clear" onClick={() => setSearch('')} title="Clear">✕</button>
+        )}
+      </div>
+
       {loading ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
           <div className="spinner" />
         </div>
-      ) : decks.length === 0 ? (
+      ) : filteredDecks.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📚</div>
-          <div className="empty-title">No decks yet</div>
-          <div className="empty-sub">
-            Upload a .csv or .xlsx file to create your first deck.
-            <br />
-            Download the demo file to see the required format.
-          </div>
-          <br />
-          <button className="btn-primary" onClick={() => setShowUpload(true)}>
-            + Upload Your First Deck
-          </button>
+          {decks.length === 0 ? (
+            <>
+              <div className="empty-icon">📚</div>
+              <div className="empty-title">No decks yet</div>
+              <div className="empty-sub">
+                Upload a .csv or .xlsx file to create your first deck.
+                <br />
+                Download the demo file to see the required format.
+              </div>
+              <br />
+              <button className="btn-primary" onClick={() => setShowUpload(true)}>
+                + Upload Your First Deck
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="empty-icon">🔍</div>
+              <div className="empty-title">No decks match "{search}"</div>
+              <div className="empty-sub">Try a different name.</div>
+              <br />
+              <button className="btn-ghost" onClick={() => setSearch('')}>Clear search</button>
+            </>
+          )}
         </div>
       ) : (
         <div className="deck-grid">
-          {decks.map((deck) => (
+          {filteredDecks.map((deck) => (
             <div key={deck.id} className="deck-card" onClick={() => setSelectedDeck(deck)}>
               <button
                 className="deck-card-delete"
