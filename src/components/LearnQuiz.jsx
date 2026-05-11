@@ -202,9 +202,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
         <button
           className="btn-ghost"
           style={{ padding: '6px 14px', fontSize: '0.8rem', flexShrink: 0 }}
-          onClick={() => {
-            if (confirm('Quit? Progress will be lost.')) onFinish(null)
-          }}
+          onClick={() => onFinish(null)}
         >
           ← Menu
         </button>
