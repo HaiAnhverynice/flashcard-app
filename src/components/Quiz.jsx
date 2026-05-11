@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import MathText from '../utils/MathText.jsx'
 
 /*
   Quiz states per question:
@@ -136,7 +137,7 @@ export default function Quiz({ deck, onFinish }) {
             {isMCQ ? 'MCQ' : 'Written'}
           </span>
         </div>
-        <div className="question-text">{currentQ.question}</div>
+        <div className="question-text"><MathText text={currentQ.question} /></div>
 
         {isMCQ ? (
           <div className="options-list">
@@ -158,7 +159,7 @@ export default function Quiz({ deck, onFinish }) {
                   }}
                 >
                   <span className="option-key">{i + 1}</span>
-                  {choice}
+                  <MathText text={choice} />
                   {phase === 'feedback' && choice === currentQ.answer && (
                     <span style={{ marginLeft: 'auto', fontSize: '1rem' }}>✓</span>
                   )}
@@ -201,7 +202,7 @@ export default function Quiz({ deck, onFinish }) {
           <span>
             {isCorrect
               ? 'Correct!'
-              : `Wrong — the correct answer is: ${currentQ.answer}`}
+              : <span>Wrong — correct answer: <MathText text={currentQ.answer} /></span>}
           </span>
         </div>
       )}
