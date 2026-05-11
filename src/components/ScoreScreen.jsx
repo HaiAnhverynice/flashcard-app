@@ -1,3 +1,5 @@
+import MathText from '../utils/MathText.jsx'
+
 export default function ScoreScreen({ deck, results, onRetry, onMenu }) {
   const score = results.filter((r) => r.correct).length
   const total = results.length
@@ -45,11 +47,11 @@ export default function ScoreScreen({ deck, results, onRetry, onMenu }) {
             <div className="breakdown-item" key={i}>
               <span className="breakdown-icon">✗</span>
               <div>
-                <div className="breakdown-q">{r.question}</div>
+                <div className="breakdown-q"><MathText text={r.question} /></div>
                 <div className="breakdown-a">
-                  Your answer: <em>{r.userAnswer || '(blank)'}</em>
+                  Your answer: <em><MathText text={r.userAnswer || '(blank)'} /></em>
                   &nbsp;·&nbsp;
-                  Correct: <strong>{r.answer}</strong>
+                  Correct: <strong><MathText text={r.answer} /></strong>
                 </div>
               </div>
             </div>
