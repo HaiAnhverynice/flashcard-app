@@ -70,7 +70,7 @@ export default function Menu({ onStartQuiz }) {
     <>
       <div className="app-header">
         <span className="logo-text">
-          Flash<span style={{ color: 'var(--accent)', WebkitTextStroke: '1.5px var(--fg)' }}>Deck</span>
+          Home/<span style={{ color: 'var(--accent)', WebkitTextStroke: '1.5px var(--fg)' }}>haianh</span>
           <span className="logo-dot" />
         </span>
       </div>
