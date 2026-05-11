@@ -189,12 +189,24 @@ export default function Quiz({ deck, onFinish }) {
       {/* Feedback */}
       {phase === 'feedback' && (
         <div className={`feedback-banner ${isCorrect ? 'correct' : 'wrong'}`}>
-          <span className="feedback-icon">{isCorrect ? '✓' : '✗'}</span>
-          <span>
-            {isCorrect
-              ? 'Correct!'
-              : <span>Wrong — correct answer: <MathText text={currentQ.answer} /></span>}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+            <span className="feedback-icon">{isCorrect ? '✓' : '✗'}</span>
+            <span>
+              {isCorrect
+                ? 'Correct!'
+                : <span>Wrong — correct answer: <MathText text={currentQ.answer} /></span>}
+            </span>
+          </div>
+          <button
+            className="btn-ghost"
+            style={{ padding: '6px 16px', fontSize: '0.82rem', flexShrink: 0, marginLeft: 8 }}
+            onClick={() => {
+              if (index + 1 >= questions.length) onFinish(results)
+              else goNext()
+            }}
+          >
+            Continue →
+          </button>
         </div>
       )}
 
