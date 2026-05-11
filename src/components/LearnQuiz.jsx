@@ -44,6 +44,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
   const [selectedOption, setSelectedOption] = useState(null)
   const [writtenInput, setWrittenInput] = useState('')
   const [isCorrect, setIsCorrect] = useState(null)
+  const [answeredQ, setAnsweredQ] = useState(null) // snapshot for feedback display
   const [done, setDone] = useState(false)
   const [roundStats, setRoundStats] = useState({ correct: 0, wrong: 0 })
 
@@ -60,6 +61,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
       userAnswer.trim().toLowerCase() === currentQ.answer.trim().toLowerCase()
 
     setIsCorrect(correct)
+    setAnsweredQ(currentQ) // snapshot before queue mutation
     setPhase('feedback')
     setRoundStats(s => ({
       correct: s.correct + (correct ? 1 : 0),
@@ -129,6 +131,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
     setSelectedOption(null)
     setWrittenInput('')
     setIsCorrect(null)
+    setAnsweredQ(null)
   }, [current])
 
   // Keyboard handler
@@ -242,9 +245,10 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
         {isMCQ ? (
           <div className="options-list">
             {currentQ.choices.map((choice, i) => {
+              const q = answeredQ || currentQ
               let cls = 'option-btn'
               if (phase === 'feedback') {
-                if (choice === currentQ.answer) cls += ' correct'
+                if (choice === q.answer) cls += ' correct'
                 else if (i === selectedOption && !isCorrect) cls += ' wrong'
               } else {
                 if (i === selectedOption) cls += ' selected'
@@ -258,7 +262,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
                 >
                   <span className="option-key">{i + 1}</span>
                   <MathText text={choice} />
-                  {phase === 'feedback' && choice === currentQ.answer && (
+                  {phase === 'feedback' && choice === q.answer && (
                     <span style={{ marginLeft: 'auto' }}>✓</span>
                   )}
                 </button>
@@ -290,15 +294,15 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
       </div>
 
       {/* Feedback */}
-      {phase === 'feedback' && (
+      {phase === 'feedback' && answeredQ && (
         <div className={`feedback-banner ${isCorrect ? 'correct' : 'wrong'}`}>
           <span className="feedback-icon">{isCorrect ? '✓' : '✗'}</span>
           <span>
             {isCorrect
-              ? isHardcore && hardcoreStreak < hardcoreNeeded
-                ? `Correct! ${hardcoreNeeded - hardcoreStreak} more needed.`
+              ? isHardcore && answeredQ.correctStreak < answeredQ.requiredCorrect
+                ? `Correct! ${answeredQ.requiredCorrect - answeredQ.correctStreak} more needed.`
                 : 'Correct! Mastered ✦'
-              : <span>Wrong — correct: <MathText text={currentQ.answer} /></span>
+              : <span>Wrong — correct: <MathText text={answeredQ.answer} /></span>
             }
           </span>
         </div>

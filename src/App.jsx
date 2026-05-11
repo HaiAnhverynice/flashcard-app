@@ -16,6 +16,7 @@ import ScoreScreen from './components/ScoreScreen.jsx'
 export default function App() {
   const [screen, setScreen] = useState('menu')
   const [activeDeck, setActiveDeck] = useState(null)
+  const [activeMode, setActiveMode] = useState('quiz')
   const [quizResults, setQuizResults] = useState(null)
 
   const startQuiz = (deck, mode = 'quiz') => {
@@ -24,6 +25,7 @@ export default function App() {
       questions: shuffle([...deck.questions]),
     }
     setActiveDeck(shuffled)
+    setActiveMode(mode)
     setQuizResults(null)
     setScreen(mode)
   }
@@ -41,7 +43,7 @@ export default function App() {
     if (!action) {
       setScreen('menu')
     } else if (action === 'retry') {
-      startQuiz(activeDeck, screen)
+      startQuiz(activeDeck, activeMode)
     }
   }
 
