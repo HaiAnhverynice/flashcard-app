@@ -150,7 +150,7 @@ export default function Quiz({ deck, onFinish }) {
                   className={cls}
                   disabled={phase === 'feedback'}
                   onClick={() => {
-                    if (phase === 'answering') setSelectedOption(i)
+                    if (phase === 'answering') submitAnswer(currentQ.choices[i])
                   }}
                 >
                   <span className="option-key">{i + 1}</span>
@@ -201,7 +201,7 @@ export default function Quiz({ deck, onFinish }) {
       {/* Hint */}
       <div className="enter-hint" style={{ marginTop: 16 }}>
         {phase === 'answering' && isMCQ && selectedOption === null && (
-          <>Press <kbd>1</kbd>–<kbd>{currentQ.choices.length}</kbd> to select an option</>
+          <>Click an option, or press <kbd>1</kbd>–<kbd>{currentQ.choices.length}</kbd> then <kbd>Enter</kbd></>
         )}
         {phase === 'answering' && isMCQ && selectedOption !== null && (
           <>Press <kbd>Enter</kbd> to confirm</>

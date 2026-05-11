@@ -269,7 +269,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
                   key={i}
                   className={cls}
                   disabled={phase === 'feedback'}
-                  onClick={() => phase === 'answering' && setSelectedOption(i)}
+                  onClick={() => phase === 'answering' && submitAnswer(q.choices[i])}
                 >
                   <span className="option-key">{i + 1}</span>
                   <MathText text={choice} />
@@ -332,7 +332,7 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
 
       <div className="enter-hint" style={{ marginTop: 16 }}>
         {phase === 'answering' && isMCQ && selectedOption === null && (
-          <>Press <kbd>1</kbd>–<kbd>{currentQ.choices.length}</kbd> to select</>
+          <>Click an option, or press <kbd>1</kbd>–<kbd>{currentQ.choices.length}</kbd> then <kbd>Enter</kbd></>
         )}
         {phase === 'answering' && isMCQ && selectedOption !== null && (
           <>Press <kbd>Enter</kbd> to confirm</>
