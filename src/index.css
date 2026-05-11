@@ -845,10 +845,10 @@ input[type="text"]:focus {
 .search-icon {
   position: absolute;
   left: 14px;
-  font-size: 1.2rem;
   color: var(--fg-muted);
   pointer-events: none;
-  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 .search-input {
   width: 100%;

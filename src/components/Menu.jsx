@@ -103,7 +103,10 @@ export default function Menu({ onStartQuiz }) {
       </div>
 
       <div className="search-wrap">
-        <span className="search-icon">⌕</span>
+        <svg className="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.8"/>
+          <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
         <input
           className="search-input"
           type="text"
