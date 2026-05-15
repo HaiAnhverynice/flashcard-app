@@ -12,7 +12,7 @@ import {
 import UploadModal from './UploadModal.jsx'
 
 // ─── Change this to your preferred admin password ───────────────────────────
-const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD
+const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || 'admin'
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function Menu({ onStartQuiz }) {
