@@ -2,15 +2,17 @@ import { useState } from 'react'
 import Menu from './components/Menu.jsx'
 import Quiz from './components/Quiz.jsx'
 import LearnQuiz from './components/LearnQuiz.jsx'
+import Flashcard from './components/Flashcard.jsx'
 import ScoreScreen from './components/ScoreScreen.jsx'
 
 /*
   Screens:
-    'menu'     → deck list
-    'quiz'     → classic timed quiz
-    'learn'    → learn mode (cycle until all correct)
-    'hardcore' → hardcore learn mode
-    'score'    → results after classic quiz
+    'menu'      → deck list
+    'quiz'      → classic timed quiz
+    'learn'     → learn mode (cycle until all correct)
+    'hardcore'  → hardcore learn mode
+    'flashcard' → simple Q&A flip cards
+    'score'     → results after classic quiz
 */
 
 export default function App() {
@@ -62,6 +64,13 @@ export default function App() {
         <Quiz
           deck={activeDeck}
           onFinish={handleQuizFinish}
+        />
+      )}
+      {screen === 'flashcard' && activeDeck && (
+        <Flashcard
+          key={`${activeDeck.name}-flashcard`}
+          deck={activeDeck}
+          onFinish={() => setScreen('menu')}
         />
       )}
       {(screen === 'learn' || screen === 'hardcore') && activeDeck && (

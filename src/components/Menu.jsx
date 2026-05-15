@@ -1,22 +1,37 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { db } from '../firebase.js'
 import {
   collection,
   getDocs,
   deleteDoc,
   doc,
+  updateDoc,
   orderBy,
   query,
 } from 'firebase/firestore'
 import UploadModal from './UploadModal.jsx'
+
+// ─── Change this to your preferred admin password ───────────────────────────
+const ADMIN_PASS = 'admin'
+// ────────────────────────────────────────────────────────────────────────────
 
 export default function Menu({ onStartQuiz }) {
   const [decks, setDecks] = useState([])
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
   const [firebaseError, setFirebaseError] = useState(false)
-  const [selectedDeck, setSelectedDeck] = useState(null) // deck waiting for mode pick
+  const [selectedDeck, setSelectedDeck] = useState(null)
   const [search, setSearch] = useState('')
+
+  // Admin gate: null | { type: 'delete', deckId } | { type: 'rename', deck }
+  const [pendingAction, setPendingAction] = useState(null)
+  const [adminPass, setAdminPass] = useState('')
+  const [adminError, setAdminError] = useState('')
+  const adminInputRef = useRef(null)
+
+  // Rename flow
+  const [renameTarget, setRenameTarget] = useState(null)
+  const [renameName, setRenameName] = useState('')
 
   const filteredDecks = decks.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase())
@@ -38,13 +53,51 @@ export default function Menu({ onStartQuiz }) {
     }
   }
 
-  useEffect(() => {
-    loadDecks()
-  }, [])
+  useEffect(() => { loadDecks() }, [])
 
-  const handleDelete = async (e, deckId) => {
+  useEffect(() => {
+    if (pendingAction && adminInputRef.current) {
+      setTimeout(() => adminInputRef.current?.focus(), 50)
+    }
+  }, [pendingAction])
+
+  // ── Admin gate ──────────────────────────────────────────────────────────────
+
+  const requestAdmin = (e, action) => {
     e.stopPropagation()
-    if (!confirm('Delete this deck?')) return
+    setAdminPass('')
+    setAdminError('')
+    setPendingAction(action)
+  }
+
+  const confirmAdmin = async () => {
+    if (adminPass !== ADMIN_PASS) {
+      setAdminError('Incorrect password.')
+      setAdminPass('')
+      adminInputRef.current?.focus()
+      return
+    }
+    const action = pendingAction
+    setPendingAction(null)
+    setAdminPass('')
+    setAdminError('')
+    if (action.type === 'delete') {
+      await execDelete(action.deckId)
+    } else if (action.type === 'rename') {
+      setRenameTarget(action.deck)
+      setRenameName(action.deck.name)
+    }
+  }
+
+  const cancelAdmin = () => {
+    setPendingAction(null)
+    setAdminPass('')
+    setAdminError('')
+  }
+
+  // ── Delete ──────────────────────────────────────────────────────────────────
+
+  const execDelete = async (deckId) => {
     try {
       if (!firebaseError) {
         await deleteDoc(doc(db, 'decks', deckId))
@@ -52,14 +105,42 @@ export default function Menu({ onStartQuiz }) {
         const local = JSON.parse(localStorage.getItem('flashcard_decks') || '[]')
         localStorage.setItem('flashcard_decks', JSON.stringify(local.filter((d) => d.id !== deckId)))
       }
-      setDecks((prev) => prev.filter((d) => d.id !== deckId))
+      setDecks(prev => prev.filter(d => d.id !== deckId))
+      if (selectedDeck?.id === deckId) setSelectedDeck(null)
     } catch (e) {
       alert('Failed to delete deck.')
     }
   }
 
+  // ── Rename ──────────────────────────────────────────────────────────────────
+
+  const execRename = async () => {
+    if (!renameName.trim() || renameName.trim() === renameTarget.name) {
+      setRenameTarget(null)
+      return
+    }
+    const newName = renameName.trim()
+    try {
+      if (!firebaseError) {
+        await updateDoc(doc(db, 'decks', renameTarget.id), { name: newName })
+      } else {
+        const local = JSON.parse(localStorage.getItem('flashcard_decks') || '[]')
+        localStorage.setItem('flashcard_decks', JSON.stringify(
+          local.map(d => d.id === renameTarget.id ? { ...d, name: newName } : d)
+        ))
+      }
+      setDecks(prev => prev.map(d => d.id === renameTarget.id ? { ...d, name: newName } : d))
+      if (selectedDeck?.id === renameTarget.id) setSelectedDeck(sd => ({ ...sd, name: newName }))
+    } catch (e) {
+      alert('Failed to rename deck.')
+    }
+    setRenameTarget(null)
+  }
+
+  // ── Upload ──────────────────────────────────────────────────────────────────
+
   const handleDeckUploaded = (deck) => {
-    setDecks((prev) => [deck, ...prev])
+    setDecks(prev => [deck, ...prev])
     setShowUpload(false)
   }
 
@@ -149,30 +230,29 @@ export default function Menu({ onStartQuiz }) {
         <div className="deck-grid">
           {filteredDecks.map((deck) => (
             <div key={deck.id} className="deck-card" onClick={() => setSelectedDeck(deck)}>
-              <button
-                className="deck-card-delete"
-                onClick={(e) => handleDelete(e, deck.id)}
-                title="Delete deck"
-              >
-                ✕
-              </button>
+              <div className="deck-card-actions" onClick={e => e.stopPropagation()}>
+                <button
+                  className="deck-card-action-btn"
+                  onClick={e => requestAdmin(e, { type: 'rename', deck })}
+                  title="Rename deck"
+                >✎</button>
+                <button
+                  className="deck-card-action-btn deck-card-delete"
+                  onClick={e => requestAdmin(e, { type: 'delete', deckId: deck.id })}
+                  title="Delete deck"
+                >✕</button>
+              </div>
               <div className="deck-card-name">{deck.name}</div>
               <div className="deck-card-meta">
                 {deck.questions?.length ?? 0} questions
-                {deck.createdAt && (
-                  <> · {new Date(deck.createdAt).toLocaleDateString()}</>
-                )}
+                {deck.createdAt && <> · {new Date(deck.createdAt).toLocaleDateString()}</>}
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {deck.questions?.filter((q) => q.type === 'MCQ').length > 0 && (
-                  <span className="tag tag-mcq">
-                    MCQ ×{deck.questions.filter((q) => q.type === 'MCQ').length}
-                  </span>
+                {deck.questions?.filter(q => q.type === 'MCQ').length > 0 && (
+                  <span className="tag tag-mcq">MCQ ×{deck.questions.filter(q => q.type === 'MCQ').length}</span>
                 )}
-                {deck.questions?.filter((q) => q.type === 'WRITTEN').length > 0 && (
-                  <span className="tag tag-written">
-                    Written ×{deck.questions.filter((q) => q.type === 'WRITTEN').length}
-                  </span>
+                {deck.questions?.filter(q => q.type === 'WRITTEN').length > 0 && (
+                  <span className="tag tag-written">Written ×{deck.questions.filter(q => q.type === 'WRITTEN').length}</span>
                 )}
               </div>
             </div>
@@ -180,9 +260,9 @@ export default function Menu({ onStartQuiz }) {
         </div>
       )}
 
-      {/* Mode picker modal */}
+      {/* ── Mode picker modal ── */}
       {selectedDeck && (
-        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setSelectedDeck(null)}>
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setSelectedDeck(null)}>
           <div className="modal">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.3rem' }}>
@@ -195,6 +275,14 @@ export default function Menu({ onStartQuiz }) {
             </p>
 
             <div className="mode-list">
+              <button className="mode-btn mode-btn-flashcard" onClick={() => { onStartQuiz(selectedDeck, 'flashcard'); setSelectedDeck(null) }}>
+                <div className="mode-icon">🃏</div>
+                <div>
+                  <div className="mode-name">Flashcard</div>
+                  <div className="mode-desc">Flip through questions and answers at your own pace.</div>
+                </div>
+              </button>
+
               <button className="mode-btn mode-btn-quiz" onClick={() => { onStartQuiz(selectedDeck, 'quiz'); setSelectedDeck(null) }}>
                 <div className="mode-icon">⚡</div>
                 <div>
@@ -217,6 +305,85 @@ export default function Menu({ onStartQuiz }) {
                   <div className="mode-name">Hardcore</div>
                   <div className="mode-desc">Wrong answers come back n+1 times. Each mistake costs more.</div>
                 </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin password modal ── */}
+      {pendingAction && (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && cancelAdmin()}>
+          <div className="modal" style={{ maxWidth: 380 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem' }}>
+                🔒 Admin Required
+              </h2>
+              <button className="btn-ghost" style={{ padding: '6px 12px' }} onClick={cancelAdmin}>✕</button>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--fg-muted)', marginBottom: 16 }}>
+              Enter the admin password to{' '}
+              <strong>{pendingAction.type === 'delete' ? 'delete this deck' : 'rename this deck'}</strong>.
+            </p>
+            <input
+              ref={adminInputRef}
+              type="password"
+              placeholder="Password"
+              value={adminPass}
+              onChange={e => { setAdminPass(e.target.value); setAdminError('') }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') confirmAdmin()
+                if (e.key === 'Escape') cancelAdmin()
+              }}
+              style={{ marginBottom: 8 }}
+            />
+            {adminError && (
+              <div className="alert alert-error" style={{ marginBottom: 12 }}>{adminError}</div>
+            )}
+            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+              <button className="btn-ghost" style={{ flex: 1 }} onClick={cancelAdmin}>Cancel</button>
+              <button
+                className={pendingAction.type === 'delete' ? 'btn-danger' : 'btn-primary'}
+                style={{ flex: 1 }}
+                onClick={confirmAdmin}
+              >
+                {pendingAction.type === 'delete' ? 'Delete' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Rename modal ── */}
+      {renameTarget && (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setRenameTarget(null)}>
+          <div className="modal" style={{ maxWidth: 420 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem' }}>
+                ✎ Rename Deck
+              </h2>
+              <button className="btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setRenameTarget(null)}>✕</button>
+            </div>
+            <input
+              autoFocus
+              type="text"
+              value={renameName}
+              onChange={e => setRenameName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') execRename()
+                if (e.key === 'Escape') setRenameTarget(null)
+              }}
+              style={{ marginBottom: 16 }}
+            />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setRenameTarget(null)}>Cancel</button>
+              <button
+                className="btn-primary"
+                style={{ flex: 1 }}
+                disabled={!renameName.trim() || renameName.trim() === renameTarget.name}
+                onClick={execRename}
+              >
+                Save
               </button>
             </div>
           </div>
