@@ -1,4 +1,4 @@
-# FlashDeck 📚
+# Flashcards 📚
 
 A fast, keyboard-driven flashcard app. Upload a `.csv` or `.xlsx` file, pick a deck, and start studying. MCQ and written questions supported.
 
