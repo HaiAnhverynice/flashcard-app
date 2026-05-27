@@ -850,6 +850,26 @@ input[type="text"]:focus {
   flex-wrap: wrap;
 }
 
+/* ── INPUT types ── */
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  border: var(--border);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  color: var(--fg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition);
+  outline: none;
+}
+input[type="email"]:focus,
+input[type="password"]:focus {
+  box-shadow: var(--shadow);
+}
+
 /* ── SEARCH BAR ── */
 .search-wrap {
   position: relative;
@@ -980,4 +1000,165 @@ input[type="text"]:focus {
   margin-top: 24px;
   letter-spacing: 0.05em;
   font-family: var(--font-mono);
+}
+
+/* ── GLOBAL HEADER ── */
+.global-header {
+  background: var(--bg);
+  border-bottom: var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.global-header-inner {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.logo-btn {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  cursor: pointer;
+}
+.logo-btn:hover {
+  background: none;
+  transform: none;
+}
+
+/* ── USER AVATAR ── */
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fg);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  border-radius: 50%;
+  border: 2px solid var(--fg);
+  flex-shrink: 0;
+}
+.user-avatar-sm {
+  width: 22px;
+  height: 22px;
+  font-size: 0.65rem;
+}
+.user-avatar-lg {
+  width: 56px;
+  height: 56px;
+  font-size: 1.4rem;
+}
+
+/* ── USER CHIP (avatar + name button) ── */
+.user-chip {
+  display: flex !important;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono) !important;
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 0.82rem !important;
+}
+
+/* ── UPLOADER LINK ── */
+.uploader-link {
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.uploader-link:hover {
+  color: var(--accent-2);
+}
+
+/* ── PRIVATE TAG ── */
+.tag-private {
+  background: #f0f0f0;
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+}
+
+/* ── AUTH TABS ── */
+.auth-tabs {
+  display: flex;
+  border: var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.auth-tabs button {
+  flex: 1;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.auth-tabs button.active {
+  background: var(--fg);
+  color: var(--accent);
+}
+.auth-tabs button:hover:not(.active) {
+  background: var(--bg);
+  color: var(--fg);
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── VISIBILITY TOGGLE ── */
+.visibility-toggle {
+  display: flex;
+  border: var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.visibility-toggle button {
+  flex: 1;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.visibility-toggle button.active {
+  background: var(--fg);
+  color: var(--accent);
+}
+.visibility-toggle button:hover:not(.active) {
+  background: var(--bg);
+  color: var(--fg);
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── SEARCH RESULTS LABEL ── */
+.results-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-bottom: 10px;
 }

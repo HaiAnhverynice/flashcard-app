@@ -3,20 +3,20 @@ import { db } from '../firebase.js'
 import { collection, addDoc } from 'firebase/firestore'
 import { parseFile } from '../utils/parseFile.js'
 
-export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
+export default function UploadModal({ user, onClose, onUploaded, useLocalFallback }) {
   const [dragging, setDragging] = useState(false)
   const [file, setFile] = useState(null)
   const [deckName, setDeckName] = useState('')
   const [questions, setQuestions] = useState(null)
+  const [isPublic, setIsPublic] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const inputRef = useRef()
 
-  const handleFile = async (f) => {
+  const handleFile = async f => {
     setError('')
     setQuestions(null)
     setFile(f)
-    // Pre-fill deck name from filename
     setDeckName(f.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '))
     try {
       const parsed = await parseFile(f)
@@ -28,7 +28,7 @@ export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
     }
   }
 
-  const handleDrop = (e) => {
+  const handleDrop = e => {
     e.preventDefault()
     setDragging(false)
     const f = e.dataTransfer.files[0]
@@ -41,14 +41,15 @@ export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
     const deck = {
       name: deckName.trim(),
       questions,
+      isPublic,
       createdAt: new Date().toISOString(),
+      ...(user ? { uid: user.uid, uploaderName: user.displayName || user.email?.split('@')[0] || 'User' } : {}),
     }
     try {
       if (!useLocalFallback) {
         const ref = await addDoc(collection(db, 'decks'), deck)
         onUploaded({ id: ref.id, ...deck })
       } else {
-        // localStorage fallback
         const id = 'local_' + Date.now()
         const local = JSON.parse(localStorage.getItem('flashcard_decks') || '[]')
         const newDeck = { id, ...deck }
@@ -63,7 +64,7 @@ export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
   }
 
   return (
-    <div className="overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.4rem' }}>
@@ -75,7 +76,7 @@ export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
         {!file ? (
           <div
             className={`drop-zone ${dragging ? 'dragging' : ''}`}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+            onDragOver={e => { e.preventDefault(); setDragging(true) }}
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             onClick={() => inputRef.current.click()}
@@ -84,7 +85,7 @@ export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
               ref={inputRef}
               type="file"
               accept=".csv,.xlsx,.xls"
-              onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
+              onChange={e => e.target.files[0] && handleFile(e.target.files[0])}
             />
             <div className="drop-zone-icon">📂</div>
             <div className="drop-zone-text">Drop your file here or click to browse</div>
@@ -118,9 +119,9 @@ export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
               <input
                 type="text"
                 value={deckName}
-                onChange={(e) => setDeckName(e.target.value)}
+                onChange={e => setDeckName(e.target.value)}
                 placeholder="e.g. Biology Chapter 3"
-                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                onKeyDown={e => e.key === 'Enter' && handleSave()}
               />
             </div>
 
@@ -128,6 +129,40 @@ export default function UploadModal({ onClose, onUploaded, useLocalFallback }) {
               <div style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', display: 'flex', gap: 12 }}>
                 <span>MCQ: {questions.filter(q => q.type === 'MCQ').length}</span>
                 <span>Written: {questions.filter(q => q.type === 'WRITTEN').length}</span>
+              </div>
+            )}
+
+            {/* Visibility toggle */}
+            <div>
+              <label style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.85rem', display: 'block', marginBottom: 8 }}>
+                VISIBILITY
+              </label>
+              <div className="visibility-toggle">
+                <button
+                  className={isPublic ? 'active' : ''}
+                  onClick={() => setIsPublic(true)}
+                  type="button"
+                >
+                  🌐 Public
+                </button>
+                <button
+                  className={!isPublic ? 'active' : ''}
+                  onClick={() => setIsPublic(false)}
+                  type="button"
+                >
+                  🔒 Private
+                </button>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', marginTop: 6 }}>
+                {isPublic
+                  ? 'Visible to everyone and searchable.'
+                  : 'Only visible to you on your profile.'}
+              </div>
+            </div>
+
+            {user && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--fg-muted)' }}>
+                Uploading as <strong>{user.displayName || user.email}</strong>
               </div>
             )}
           </div>
