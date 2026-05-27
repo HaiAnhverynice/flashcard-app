@@ -26,10 +26,10 @@ function shuffle(arr) {
 function buildQueue(questions) {
   return shuffle(questions).map((q, i) => ({
     ...q,
-    qid: i,         // stable id
-    wrongCount: 0,  // how many times wrong so far
-    requiredCorrect: 1, // how many consecutive corrects needed (hardcore)
-    correctStreak: 0,
+    qid: i,
+    wrongCount: 0,
+    requiredCorrect: 2, // learn: 2 total correct; hardcore: 2 in a row (grows on wrong)
+    correctStreak: 0,   // learn: total correct count; hardcore: consecutive streak
   }))
 }
 
@@ -79,18 +79,16 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
 
       if (correct) {
         entry.correctStreak += 1
-        const needed = isHardcore ? entry.requiredCorrect : 1
-        if (entry.correctStreak >= needed) {
-          // This question is mastered — remove from queue after feedback
+        if (entry.correctStreak >= entry.requiredCorrect) {
           entry._mastered = true
         }
       } else {
         entry.wrongCount += 1
-        entry.correctStreak = 0
         if (isHardcore) {
-          // Increase required correct count by 1 each time wrong
-          entry.requiredCorrect = entry.wrongCount + 1
+          entry.correctStreak = 0       // reset streak
+          entry.requiredCorrect += 1    // each wrong adds 1 more required
         }
+        // learn: correctStreak is total correct — not reset on wrong
       }
       updated[current] = entry
       return updated
@@ -191,9 +189,8 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
   if (!currentQ) return null
 
   const progress = masteredCount / total
-  // Hardcore: show required vs streak
-  const hardcoreNeeded = isHardcore ? currentQ.requiredCorrect : 1
-  const hardcoreStreak = currentQ.correctStreak
+  const neededCorrect = currentQ.requiredCorrect
+  const currentCorrect = currentQ.correctStreak
 
   return (
     <div>
@@ -225,13 +222,17 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
         </span>
       </div>
 
-      {/* Hardcore streak indicator */}
-      {isHardcore && phase === 'answering' && currentQ.wrongCount > 0 && (
+      {/* Progress indicator */}
+      {phase === 'answering' && currentQ.correctStreak > 0 && (
         <div className="hardcore-streak">
-          <span>Needs {hardcoreNeeded} correct in a row</span>
+          <span>
+            {isHardcore
+              ? `Needs ${neededCorrect} correct in a row`
+              : `${currentCorrect}/2 correct`}
+          </span>
           <div className="streak-dots">
-            {Array.from({ length: hardcoreNeeded }).map((_, i) => (
-              <div key={i} className={`streak-dot ${i < hardcoreStreak ? 'filled' : ''}`} />
+            {Array.from({ length: neededCorrect }).map((_, i) => (
+              <div key={i} className={`streak-dot ${i < currentCorrect ? 'filled' : ''}`} />
             ))}
           </div>
         </div>
@@ -243,8 +244,11 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
           <span className={`tag ${isMCQ ? 'tag-mcq' : 'tag-written'}`}>
             {isMCQ ? 'MCQ' : 'Written'}
           </span>
-          {currentQ.wrongCount > 0 && (
-            <span className="tag tag-retry">↺ attempt {currentQ.wrongCount + 1}</span>
+          {currentQ.wrongCount > 0 && isHardcore && (
+            <span className="tag tag-retry">↺ needs {currentQ.requiredCorrect} in a row</span>
+          )}
+          {currentQ.wrongCount > 0 && !isHardcore && (
+            <span className="tag tag-retry">↺ retry</span>
           )}
         </div>
         <div className="question-text">
@@ -309,8 +313,10 @@ export default function LearnQuiz({ deck, mode, onFinish }) {
             <span className="feedback-icon">{isCorrect ? '✓' : '✗'}</span>
             <span>
               {isCorrect
-                ? isHardcore && answeredQ.correctStreak < answeredQ.requiredCorrect
-                  ? `Correct! ${answeredQ.requiredCorrect - answeredQ.correctStreak} more needed.`
+                ? answeredQ.correctStreak + 1 < answeredQ.requiredCorrect
+                  ? isHardcore
+                    ? `Correct! ${answeredQ.requiredCorrect - answeredQ.correctStreak - 1} more in a row needed.`
+                    : `Correct! ${answeredQ.correctStreak + 1}/2 — ${answeredQ.requiredCorrect - answeredQ.correctStreak - 1} more needed.`
                   : 'Correct! Mastered ✦'
                 : !isMCQ
                   ? <span><strong>Wrong.</strong> Correct answer: <MathText text={answeredQ.answer} /></span>
