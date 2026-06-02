@@ -158,11 +158,19 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
     ['What year did World War II end?', 'written', '1945', '', '', '', ''],
   ]
 
-  const downloadDemo = () => {
+  const wordDefRows = [
+    ['Word', 'Definition'],
+    ['Ephemeral', 'Lasting for a very short time'],
+    ['Ubiquitous', 'Present everywhere at once'],
+    ['Pragmatic', 'Dealing with things sensibly and realistically'],
+    ['Ambiguous', 'Open to more than one interpretation'],
+  ]
+
+  const downloadDemo = (name = 'demo_questions.csv') => {
     const base = import.meta.env.BASE_URL || './'
     const a = document.createElement('a')
-    a.href = base + 'demo_questions.csv'
-    a.download = 'demo_questions.csv'
+    a.href = base + name
+    a.download = name
     a.click()
   }
 
@@ -188,8 +196,8 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
       {showDemo && (
         <div className="demo-preview" style={{ marginBottom: 16, padding: 16, border: '1px solid var(--border, #ddd)', borderRadius: 8, background: 'var(--bg-subtle, #f7f7f8)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <strong>Demo CSV format</strong>
-            <button className="btn-ghost" onClick={downloadDemo} title="Download demo CSV">⬇ Download demo_questions.csv</button>
+            <strong>Format 1 — Full (MCQ + Written)</strong>
+            <button className="btn-ghost" onClick={() => downloadDemo('demo_questions.csv')} title="Download demo CSV">⬇ demo_questions.csv</button>
           </div>
           <p className="section-subtitle" style={{ marginTop: 0, marginBottom: 10 }}>
             For MCQ rows, <code>Answer</code> is the 1-based index of the correct choice. Written rows leave Choice columns empty.
@@ -208,6 +216,34 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
                   <tr key={r}>
                     {row.map((cell, c) => (
                       <td key={c} style={{ border: '1px solid var(--border, #ddd)', padding: '6px 10px', whiteSpace: 'nowrap' }}>{cell || <span style={{ color: 'var(--fg-muted, #999)' }}>—</span>}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 10 }}>
+            <strong>Format 2 — Word / Definition (auto MCQ)</strong>
+            <button className="btn-ghost" onClick={() => downloadDemo('demo_words.csv')} title="Download demo words CSV">⬇ demo_words.csv</button>
+          </div>
+          <p className="section-subtitle" style={{ marginTop: 0, marginBottom: 10 }}>
+            Just two columns. Each word becomes a multiple-choice question — its definition is the correct answer and the other definitions are shuffled in as distractors.
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.85rem' }}>
+              <thead>
+                <tr>
+                  {wordDefRows[0].map((h, i) => (
+                    <th key={i} style={{ border: '1px solid var(--border, #ddd)', padding: '6px 10px', textAlign: 'left', background: 'var(--bg, #fff)', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {wordDefRows.slice(1).map((row, r) => (
+                  <tr key={r}>
+                    {row.map((cell, c) => (
+                      <td key={c} style={{ border: '1px solid var(--border, #ddd)', padding: '6px 10px', whiteSpace: 'nowrap' }}>{cell}</td>
                     ))}
                   </tr>
                 ))}

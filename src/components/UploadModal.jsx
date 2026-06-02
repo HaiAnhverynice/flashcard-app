@@ -89,7 +89,7 @@ export default function UploadModal({ user, onClose, onUploaded, useLocalFallbac
             />
             <div className="drop-zone-icon">📂</div>
             <div className="drop-zone-text">Drop your file here or click to browse</div>
-            <div className="drop-zone-sub">.csv or .xlsx — see demo file for format</div>
+            <div className="drop-zone-sub">.csv or .xlsx — full format or just Word,Definition (see Demo)</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
