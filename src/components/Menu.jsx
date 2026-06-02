@@ -21,6 +21,7 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
   const [firebaseError, setFirebaseError] = useState(false)
   const [selectedDeck, setSelectedDeck] = useState(null)
   const [search, setSearch] = useState('')
+  const [showDemo, setShowDemo] = useState(false)
 
   // pendingAction: { type, deckId?, deck, isOwner }
   const [pendingAction, setPendingAction] = useState(null)
@@ -148,6 +149,15 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
     setShowUpload(false)
   }
 
+  const demoRows = [
+    ['Question', 'Type', 'Answer', 'Choice A', 'Choice B', 'Choice C', 'Choice D'],
+    ['What is the capital of France?', 'MCQ', '3', 'London', 'Berlin', 'Paris', 'Madrid'],
+    ['Which planet is closest to the Sun?', 'MCQ', '4', 'Venus', 'Earth', 'Mars', 'Mercury'],
+    ['What does HTML stand for?', 'MCQ', '1', 'HyperText Markup Language', 'Hyper Transfer Markup Language', 'High Text Machine Language', 'HyperText Machine Link'],
+    ['What is the boiling point of water in Celsius?', 'written', '100', '', '', '', ''],
+    ['What year did World War II end?', 'written', '1945', '', '', '', ''],
+  ]
+
   const downloadDemo = () => {
     const base = import.meta.env.BASE_URL || './'
     const a = document.createElement('a')
@@ -170,10 +180,42 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
           <p className="section-subtitle">Public decks{user ? ' and your private decks' : ''}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-          <button className="btn-ghost" onClick={downloadDemo} title="Download demo CSV">⬇ Demo</button>
+          <button className="btn-ghost" onClick={() => setShowDemo(v => !v)} title="Preview demo CSV format">{showDemo ? '✕ Hide Demo' : '👁 Demo'}</button>
           <button className="btn-primary" onClick={handleUploadClick}>+ Upload Deck</button>
         </div>
       </div>
+
+      {showDemo && (
+        <div className="demo-preview" style={{ marginBottom: 16, padding: 16, border: '1px solid var(--border, #ddd)', borderRadius: 8, background: 'var(--bg-subtle, #f7f7f8)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <strong>Demo CSV format</strong>
+            <button className="btn-ghost" onClick={downloadDemo} title="Download demo CSV">⬇ Download demo_questions.csv</button>
+          </div>
+          <p className="section-subtitle" style={{ marginTop: 0, marginBottom: 10 }}>
+            For MCQ rows, <code>Answer</code> is the 1-based index of the correct choice. Written rows leave Choice columns empty.
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.85rem' }}>
+              <thead>
+                <tr>
+                  {demoRows[0].map((h, i) => (
+                    <th key={i} style={{ border: '1px solid var(--border, #ddd)', padding: '6px 10px', textAlign: 'left', background: 'var(--bg, #fff)', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {demoRows.slice(1).map((row, r) => (
+                  <tr key={r}>
+                    {row.map((cell, c) => (
+                      <td key={c} style={{ border: '1px solid var(--border, #ddd)', padding: '6px 10px', whiteSpace: 'nowrap' }}>{cell || <span style={{ color: 'var(--fg-muted, #999)' }}>—</span>}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="search-wrap">
         <input
