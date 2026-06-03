@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { db } from '../firebase.js'
-import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore'
+import { collection, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 import DeckModeModal from './DeckModeModal.jsx'
 import UploadModal from './UploadModal.jsx'
 
@@ -14,6 +14,7 @@ export default function UserProfile({ userId, currentUser, onBack, onStartQuiz, 
   const [openFolder, setOpenFolder] = useState(null)
   const [moveTarget, setMoveTarget] = useState(null) // deck being assigned to a folder
   const [newFolder, setNewFolder] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null) // deck pending deletion
 
   const isOwn = currentUser?.uid === userId
 
@@ -82,6 +83,19 @@ export default function UserProfile({ userId, currentUser, onBack, onStartQuiz, 
     setNewFolder('')
   }
 
+  // ── Delete own deck ───────────────────────────────────────────────────────────
+  const execDelete = async deck => {
+    try {
+      if (!String(deck.id).startsWith('local_')) {
+        await deleteDoc(doc(db, 'decks', deck.id))
+      }
+      setDecks(prev => prev.filter(d => d.id !== deck.id))
+    } catch (e) {
+      alert('Failed to delete deck.')
+    }
+    setDeleteTarget(null)
+  }
+
   // ── Deck card renderer ────────────────────────────────────────────────────────
   const renderDeckCard = deck => (
     <div key={deck.id} className="deck-card" onClick={() => setPendingDeck(deck)}>
@@ -92,6 +106,11 @@ export default function UserProfile({ userId, currentUser, onBack, onStartQuiz, 
             onClick={() => setMoveTarget(deck)}
             title="Move to folder"
           >📁</button>
+          <button
+            className="deck-card-action-btn deck-card-delete"
+            onClick={() => setDeleteTarget(deck)}
+            title="Delete deck"
+          >✕</button>
         </div>
       )}
       {isOwn && deck.isPublic === false && (
@@ -160,6 +179,7 @@ export default function UserProfile({ userId, currentUser, onBack, onStartQuiz, 
           />
         )}
         {moveTarget && renderMoveModal()}
+        {deleteTarget && renderDeleteModal()}
       </div>
     )
   }
@@ -222,6 +242,27 @@ export default function UserProfile({ userId, currentUser, onBack, onStartQuiz, 
             >
               Move
             </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Delete confirm modal ──────────────────────────────────────────────────────
+  function renderDeleteModal() {
+    return (
+      <div className="overlay" onClick={e => e.target === e.currentTarget && setDeleteTarget(null)}>
+        <div className="modal" style={{ maxWidth: 380 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem' }}>⚠️ Delete Deck</h2>
+            <button className="btn-ghost" style={{ padding: '6px 12px' }} onClick={() => setDeleteTarget(null)}>✕</button>
+          </div>
+          <p style={{ fontSize: '0.85rem', color: 'var(--fg-muted)', marginBottom: 16 }}>
+            Delete <strong>{deleteTarget.name}</strong>? This cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn-ghost" style={{ flex: 1 }} onClick={() => setDeleteTarget(null)}>Cancel</button>
+            <button className="btn-danger" style={{ flex: 1 }} onClick={() => execDelete(deleteTarget)}>Delete</button>
           </div>
         </div>
       </div>
@@ -348,6 +389,8 @@ export default function UserProfile({ userId, currentUser, onBack, onStartQuiz, 
       )}
 
       {moveTarget && renderMoveModal()}
+
+      {deleteTarget && renderDeleteModal()}
 
       {showUpload && (
         <UploadModal
