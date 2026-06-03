@@ -7,6 +7,7 @@ export default function UploadModal({ user, onClose, onUploaded, useLocalFallbac
   const [dragging, setDragging] = useState(false)
   const [file, setFile] = useState(null)
   const [deckName, setDeckName] = useState('')
+  const [folder, setFolder] = useState('')
   const [questions, setQuestions] = useState(null)
   const [isPublic, setIsPublic] = useState(true)
   const [error, setError] = useState('')
@@ -40,6 +41,7 @@ export default function UploadModal({ user, onClose, onUploaded, useLocalFallbac
     setSaving(true)
     const deck = {
       name: deckName.trim(),
+      folder: folder.trim(),
       questions,
       isPublic,
       createdAt: new Date().toISOString(),
@@ -123,6 +125,22 @@ export default function UploadModal({ user, onClose, onUploaded, useLocalFallbac
                 placeholder="e.g. Biology Chapter 3"
                 onKeyDown={e => e.key === 'Enter' && handleSave()}
               />
+            </div>
+
+            <div>
+              <label style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.85rem', display: 'block', marginBottom: 6 }}>
+                FOLDER <span style={{ fontWeight: 400, textTransform: 'none', color: 'var(--fg-muted)' }}>(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={folder}
+                onChange={e => setFolder(e.target.value)}
+                placeholder="e.g. Semester 1"
+                onKeyDown={e => e.key === 'Enter' && handleSave()}
+              />
+              <div style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', marginTop: 6 }}>
+                Group this deck with others under a folder on your profile.
+              </div>
             </div>
 
             {questions && (

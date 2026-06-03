@@ -18,12 +18,21 @@ export default function HomePage({ onStartQuiz, onNavigateUser }) {
         getDocs(query(collection(db, 'decks'), orderBy('createdAt', 'desc'), limit(300))),
         getDocs(collection(db, 'users')),
       ])
-      const decks = deckSnap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(d => d.isPublic !== false && d.name?.toLowerCase().includes(term))
+      const allDecks = deckSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const publicDecks = allDecks.filter(d => d.isPublic !== false)
+
+      // Public deck count per user — used to enrich user results
+      const deckCount = {}
+      for (const d of publicDecks) {
+        if (d.uid) deckCount[d.uid] = (deckCount[d.uid] || 0) + 1
+      }
+
+      const decks = publicDecks.filter(d => d.name?.toLowerCase().includes(term))
       const users = userSnap.docs
         .map(d => ({ uid: d.id, ...d.data() }))
         .filter(u => u.displayName?.toLowerCase().includes(term))
+        .map(u => ({ ...u, deckCount: deckCount[u.uid] || 0 }))
+        .sort((a, b) => b.deckCount - a.deckCount)
       setResults({ decks, users })
     } catch (e) {
       console.error(e)
@@ -89,9 +98,13 @@ export default function HomePage({ onStartQuiz, onNavigateUser }) {
                       key={u.uid}
                       className="btn-ghost user-chip"
                       onClick={() => onNavigateUser(u.uid, u.displayName)}
+                      title={`View ${u.displayName}'s profile`}
                     >
                       <span className="user-avatar user-avatar-sm">{u.displayName?.[0]?.toUpperCase() ?? '?'}</span>
                       {u.displayName}
+                      <span style={{ color: 'var(--fg-muted)', fontWeight: 400, marginLeft: 2 }}>
+                        · {u.deckCount} deck{u.deckCount !== 1 ? 's' : ''}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -145,9 +158,13 @@ export default function HomePage({ onStartQuiz, onNavigateUser }) {
           <div className="card" style={{ padding: '20px 24px' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 10 }}>1. Upload a CSV or Excel file</div>
             <p style={{ fontSize: '0.83rem', color: 'var(--fg-muted)', marginBottom: 12 }}>
-              Your file must have these columns (a header row is optional — it's auto-detected):
+              Two formats are accepted — the right one is auto-detected, and a header row is optional.
             </p>
-            <div style={{ overflowX: 'auto' }}>
+
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.85rem', marginBottom: 6 }}>
+              Format A — Full (MCQ &amp; written)
+            </div>
+            <div style={{ overflowX: 'auto', marginBottom: 16 }}>
               <table style={{ fontSize: '0.8rem', borderCollapse: 'collapse', width: '100%' }}>
                 <thead>
                   <tr style={{ borderBottom: 'var(--border)' }}>
@@ -160,8 +177,8 @@ export default function HomePage({ onStartQuiz, onNavigateUser }) {
                   {[
                     ['A', 'Question', 'The question text'],
                     ['B', 'Type', '"MCQ" or "written"'],
-                    ['C', 'Answer', 'The correct answer'],
-                    ['D+', 'Choices', 'MCQ options (include the correct answer here too)'],
+                    ['C', 'Answer', 'For MCQ: the choice number (1, 2, 3…) or exact choice text. For written: the answer text.'],
+                    ['D+', 'Choices', 'MCQ options only — one per column. Leave empty for written rows.'],
                   ].map(([col, hdr, desc]) => (
                     <tr key={col} style={{ borderBottom: '1px solid #0000001a' }}>
                       <td style={{ padding: '5px 10px' }}><code>{col}</code></td>
@@ -172,6 +189,15 @@ export default function HomePage({ onStartQuiz, onNavigateUser }) {
                 </tbody>
               </table>
             </div>
+
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.85rem', marginBottom: 6 }}>
+              Format B — Word / Definition
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', margin: 0 }}>
+              Just two columns (<code>Word</code>, <code>Definition</code>). Each word becomes a
+              multiple-choice question — its definition is the correct answer and other definitions
+              are shuffled in as distractors. Needs at least 2 rows.
+            </p>
           </div>
 
           <div className="card" style={{ padding: '20px 24px' }}>

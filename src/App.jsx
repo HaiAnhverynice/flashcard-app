@@ -70,7 +70,7 @@ export default function App() {
           <div className="global-header-inner">
             <button className="logo-btn" onClick={() => setScreen('home')}>
               <span className="logo-text">
-                Flash<span style={{ color: 'var(--accent)', WebkitTextStroke: '1.5px var(--fg)' }}>cards</span>
+                YEL<span style={{ color: 'var(--accent)', WebkitTextStroke: '1.5px var(--fg)' }}>LOW</span>
                 <span className="logo-dot" />
               </span>
             </button>
