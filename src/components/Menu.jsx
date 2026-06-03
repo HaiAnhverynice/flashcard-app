@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { db } from '../firebase.js'
 import {
   collection,
@@ -12,8 +12,6 @@ import {
 import UploadModal from './UploadModal.jsx'
 import DeckModeModal from './DeckModeModal.jsx'
 
-const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || 'admin'
-
 export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) {
   const [decks, setDecks] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,11 +21,8 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
   const [search, setSearch] = useState('')
   const [showDemo, setShowDemo] = useState(false)
 
-  // pendingAction: { type, deckId?, deck, isOwner }
+  // pendingAction: { type, deckId?, deck }
   const [pendingAction, setPendingAction] = useState(null)
-  const [adminPass, setAdminPass] = useState('')
-  const [adminError, setAdminError] = useState('')
-  const adminInputRef = useRef(null)
 
   const [renameTarget, setRenameTarget] = useState(null)
   const [renameName, setRenameName] = useState('')
@@ -55,33 +50,18 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
 
   useEffect(() => { loadDecks() }, [])
 
-  useEffect(() => {
-    if (pendingAction && !pendingAction.isOwner && adminInputRef.current) {
-      setTimeout(() => adminInputRef.current?.focus(), 50)
-    }
-  }, [pendingAction])
+  // ── Owner-only action gate ────────────────────────────────────────────────────
 
-  // ── Admin gate ────────────────────────────────────────────────────────────────
-
-  const requestAdmin = (e, action) => {
+  const requestAction = (e, action) => {
     e.stopPropagation()
-    const isOwner = !!(user?.uid && action.deck?.uid && action.deck.uid === user.uid)
-    setAdminPass('')
-    setAdminError('')
-    setPendingAction({ ...action, isOwner })
+    // Owner check — only the uploader may rename/delete their deck.
+    if (!(user?.uid && action.deck?.uid && action.deck.uid === user.uid)) return
+    setPendingAction(action)
   }
 
-  const confirmAdmin = async () => {
-    if (!pendingAction.isOwner && adminPass !== ADMIN_PASS) {
-      setAdminError('Incorrect password.')
-      setAdminPass('')
-      adminInputRef.current?.focus()
-      return
-    }
+  const confirmAction = async () => {
     const action = pendingAction
     setPendingAction(null)
-    setAdminPass('')
-    setAdminError('')
     if (action.type === 'delete') {
       await execDelete(action.deckId)
     } else if (action.type === 'rename') {
@@ -90,11 +70,7 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
     }
   }
 
-  const cancelAdmin = () => {
-    setPendingAction(null)
-    setAdminPass('')
-    setAdminError('')
-  }
+  const cancelAction = () => setPendingAction(null)
 
   // ── Delete ────────────────────────────────────────────────────────────────────
 
@@ -290,18 +266,20 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
         <div className="deck-grid">
           {filteredDecks.map(deck => (
             <div key={deck.id} className="deck-card" onClick={() => setSelectedDeck(deck)}>
-              <div className="deck-card-actions" onClick={e => e.stopPropagation()}>
-                <button
-                  className="deck-card-action-btn"
-                  onClick={e => requestAdmin(e, { type: 'rename', deck })}
-                  title="Rename deck"
-                >✎</button>
-                <button
-                  className="deck-card-action-btn deck-card-delete"
-                  onClick={e => requestAdmin(e, { type: 'delete', deckId: deck.id, deck })}
-                  title="Delete deck"
-                >✕</button>
-              </div>
+              {deck.uid && deck.uid === user?.uid && (
+                <div className="deck-card-actions" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="deck-card-action-btn"
+                    onClick={e => requestAction(e, { type: 'rename', deck })}
+                    title="Rename deck"
+                  >✎</button>
+                  <button
+                    className="deck-card-action-btn deck-card-delete"
+                    onClick={e => requestAction(e, { type: 'delete', deckId: deck.id, deck })}
+                    title="Delete deck"
+                  >✕</button>
+                </div>
+              )}
               {deck.uid === user?.uid && deck.isPublic === false && (
                 <span className="tag tag-private" style={{ marginBottom: 4, display: 'inline-block' }}>🔒 Private</span>
               )}
@@ -343,51 +321,25 @@ export default function Menu({ user, onStartQuiz, onNavigateUser, onShowAuth }) 
         />
       )}
 
-      {/* Admin / owner confirm modal */}
+      {/* Owner confirm modal */}
       {pendingAction && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && cancelAdmin()}>
+        <div className="overlay" onClick={e => e.target === e.currentTarget && cancelAction()}>
           <div className="modal" style={{ maxWidth: 380 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem' }}>
-                {pendingAction.isOwner ? '⚠️ Confirm' : '🔒 Admin Required'}
-              </h2>
-              <button className="btn-ghost" style={{ padding: '6px 12px' }} onClick={cancelAdmin}>✕</button>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem' }}>⚠️ Confirm</h2>
+              <button className="btn-ghost" style={{ padding: '6px 12px' }} onClick={cancelAction}>✕</button>
             </div>
-            {pendingAction.isOwner ? (
-              <p style={{ fontSize: '0.85rem', color: 'var(--fg-muted)', marginBottom: 16 }}>
-                {pendingAction.type === 'delete'
-                  ? `Delete "${pendingAction.deck?.name}"? This cannot be undone.`
-                  : `Rename "${pendingAction.deck?.name}"?`}
-              </p>
-            ) : (
-              <>
-                <p style={{ fontSize: '0.82rem', color: 'var(--fg-muted)', marginBottom: 16 }}>
-                  Enter the admin password to{' '}
-                  <strong>{pendingAction.type === 'delete' ? 'delete' : 'rename'} this deck</strong>.
-                </p>
-                <input
-                  ref={adminInputRef}
-                  type="password"
-                  placeholder="Password"
-                  value={adminPass}
-                  onChange={e => { setAdminPass(e.target.value); setAdminError('') }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') confirmAdmin()
-                    if (e.key === 'Escape') cancelAdmin()
-                  }}
-                  style={{ marginBottom: 8 }}
-                />
-                {adminError && (
-                  <div className="alert alert-error" style={{ marginBottom: 12 }}>{adminError}</div>
-                )}
-              </>
-            )}
+            <p style={{ fontSize: '0.85rem', color: 'var(--fg-muted)', marginBottom: 16 }}>
+              {pendingAction.type === 'delete'
+                ? `Delete "${pendingAction.deck?.name}"? This cannot be undone.`
+                : `Rename "${pendingAction.deck?.name}"?`}
+            </p>
             <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <button className="btn-ghost" style={{ flex: 1 }} onClick={cancelAdmin}>Cancel</button>
+              <button className="btn-ghost" style={{ flex: 1 }} onClick={cancelAction}>Cancel</button>
               <button
                 className={pendingAction.type === 'delete' ? 'btn-danger' : 'btn-primary'}
                 style={{ flex: 1 }}
-                onClick={confirmAdmin}
+                onClick={confirmAction}
               >
                 {pendingAction.type === 'delete' ? 'Delete' : 'Continue'}
               </button>
